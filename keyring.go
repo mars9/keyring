@@ -1,3 +1,5 @@
+// Package keyring provides functions for reading and writing passwords
+// securely.
 package keyring
 
 // Keyring defines the Keyring client available on the platform.
