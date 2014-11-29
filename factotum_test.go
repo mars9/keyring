@@ -1,3 +1,5 @@
+// +build freebsd linux netbsd openbsd
+
 package keyring
 
 import "testing"

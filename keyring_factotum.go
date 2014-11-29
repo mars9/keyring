@@ -1,3 +1,5 @@
+// +build freebsd linux netbsd openbsd
+
 package keyring
 
 import (
@@ -7,6 +9,8 @@ import (
 	"code.google.com/p/goplan9/plan9"
 	"code.google.com/p/goplan9/plan9/client"
 )
+
+func init() { keyring["factotum"] = &factotum{} }
 
 type rpc struct {
 	fid *client.Fid

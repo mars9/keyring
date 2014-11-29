@@ -2,6 +2,13 @@
 // securely.
 package keyring
 
+import (
+	"errors"
+	"runtime"
+)
+
+var keyring = map[string]Keyring{}
+
 // Keyring defines the Keyring client available on the platform.
 type Keyring interface {
 	// Get gets the password for the service and username if exists.
@@ -14,7 +21,14 @@ type Keyring interface {
 	Delete(service, username string) error
 }
 
-// NewKeyring returns the Keyring client available on the platform.
-// Currently only supports Factotum
-//		http://plan9.bell-labs.com/magic/man2html/4/factotum
-func NewKeyring() Keyring { return new(factotum) }
+// New returns the Keyring client available on the platform.
+func New() (Keyring, error) {
+	switch runtime.GOOS {
+	case "freebsd", "linux", "netbsd", "openbsd":
+		return keyring["factotum"], nil
+	case "darwin":
+		return keyring["darwin"], nil
+	default:
+		return nil, errors.New("unsupported OS")
+	}
+}
