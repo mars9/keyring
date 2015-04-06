@@ -2,7 +2,10 @@
 
 package keyring
 
-import "testing"
+import (
+	"bytes"
+	"testing"
+)
 
 var testFactotum = false
 
@@ -11,8 +14,8 @@ func TestKeyringFactotum(t *testing.T) {
 		return
 	}
 
-	f := new(factotum)
-	err := f.Set("test.service", "test.user", "test.password")
+	f := &factotum{}
+	err := f.Set("test.service", "test.user", []byte("test.password"))
 	if err != nil {
 		t.Fatalf("set: %v", err)
 	}
@@ -21,7 +24,7 @@ func TestKeyringFactotum(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get: %v", err)
 	}
-	if password != "test.password" {
+	if bytes.Compare(password, []byte("test.password")) != 0 {
 		t.Fatalf("get: expected test.password, got %s", password)
 	}
 

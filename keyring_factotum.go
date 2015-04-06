@@ -6,8 +6,8 @@ import (
 	"bytes"
 	"fmt"
 
-	"code.google.com/p/goplan9/plan9"
-	"code.google.com/p/goplan9/plan9/client"
+	"9fans.net/go/plan9"
+	"9fans.net/go/plan9/client"
 )
 
 func init() { keyring["factotum"] = &factotum{} }
@@ -32,49 +32,7 @@ func (c *rpc) Close() error { return c.fid.Close() }
 
 type factotum struct{}
 
-func (f *factotum) Get(service, username string) (string, error) {
-	params := fmt.Sprintf("dom=%s proto=pass role=client", service)
-
-	ctl, err := newRPC("rpc")
-	if err != nil {
-		return "", err
-	}
-	defer ctl.Close()
-
-	_, err = ctl.fid.Write([]byte("start " + params))
-	if err != nil {
-		return "", err
-	}
-	buf := make([]byte, 4096)
-	n, err := ctl.fid.Read(buf)
-	if err != nil {
-		return "", err
-	}
-	if !bytes.HasPrefix(buf, []byte("ok")) {
-		return "", fmt.Errorf("start failed: %s", buf[:n])
-	}
-
-	_, err = ctl.fid.Write([]byte("read"))
-	if err != nil {
-		return "", err
-	}
-	n, err = ctl.fid.Read(buf)
-	if err != nil {
-		return "", err
-	}
-	if !bytes.HasPrefix(buf, []byte("ok")) {
-		return "", fmt.Errorf("read failed: %s", buf[:n])
-	}
-
-	elems := bytes.Split(buf[:n], []byte(" "))
-	if len(elems) != 3 {
-		return "", fmt.Errorf("split response failed")
-	}
-
-	return string(elems[2]), nil
-}
-
-func (f *factotum) Set(service, username, password string) error {
+func (f *factotum) Set(service, username string, password []byte) error {
 	params := fmt.Sprintf("dom=%s proto=pass role=client", service)
 	key := params + fmt.Sprintf(" user=%s !password=%s", username, password)
 
@@ -86,6 +44,46 @@ func (f *factotum) Set(service, username, password string) error {
 
 	_, err = ctl.fid.Write([]byte("key " + key))
 	return err
+}
+
+func (f *factotum) Get(service, username string) ([]byte, error) {
+	params := fmt.Sprintf("dom=%s proto=pass role=client", service)
+
+	ctl, err := newRPC("rpc")
+	if err != nil {
+		return nil, err
+	}
+	defer ctl.Close()
+
+	if _, err = ctl.fid.Write([]byte("start " + params)); err != nil {
+		return nil, err
+	}
+
+	buf := make([]byte, 4096)
+	n, err := ctl.fid.Read(buf)
+	if err != nil {
+		return nil, err
+	}
+	if !bytes.HasPrefix(buf, []byte("ok")) {
+		return nil, fmt.Errorf("start failed: %s", buf[:n])
+	}
+
+	if _, err = ctl.fid.Write([]byte("read")); err != nil {
+		return nil, err
+	}
+
+	if n, err = ctl.fid.Read(buf); err != nil {
+		return nil, err
+	}
+	if !bytes.HasPrefix(buf, []byte("ok")) {
+		return nil, fmt.Errorf("read failed: %s", buf[:n])
+	}
+
+	elems := bytes.Split(buf[:n], []byte(" "))
+	if len(elems) != 3 {
+		return nil, fmt.Errorf("split response failed")
+	}
+	return elems[2], nil
 }
 
 func (f *factotum) Delete(service, username string) error {

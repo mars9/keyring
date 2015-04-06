@@ -89,29 +89,15 @@ func init() { keyring["darwin"] = &keychain{} }
 
 type keychain struct{}
 
-func (k *keychain) Get(service, username string) (string, error) {
+func (k *keychain) Set(service, username string, password []byte) error {
 	cservice := C.CString(service)
 	cuser := C.CString(username)
-	defer C.free(unsafe.Pointer(cservice))
-	defer C.free(unsafe.Pointer(cuser))
-
-	var cpasswd, cerror *C.char
-	C.getpasswd(cservice, cuser, &cpasswd, &cerror)
-	defer C.free(unsafe.Pointer(cpasswd))
-	defer C.free(unsafe.Pointer(cerror))
-	if cerror != nil {
-		return "", errors.New(C.GoString(cerror))
-	}
-	return C.GoString(cpasswd), nil
-}
-
-func (k *keychain) Set(service, username, password string) error {
-	cservice := C.CString(service)
-	cuser := C.CString(username)
-	cpasswd := C.CString(password)
-	defer C.free(unsafe.Pointer(cservice))
-	defer C.free(unsafe.Pointer(cuser))
-	defer C.free(unsafe.Pointer(cpasswd))
+	cpasswd := C.CString(string(password))
+	defer func() {
+		C.free(unsafe.Pointer(cservice))
+		C.free(unsafe.Pointer(cuser))
+		C.free(unsafe.Pointer(cpasswd))
+	}()
 
 	var cerror *C.char
 	defer C.free(unsafe.Pointer(cerror))
@@ -120,6 +106,24 @@ func (k *keychain) Set(service, username, password string) error {
 		return errors.New(C.GoString(cerror))
 	}
 	return nil
+}
+
+func (k *keychain) Get(service, username string) ([]byte, error) {
+	cservice := C.CString(service)
+	cuser := C.CString(username)
+	defer func() {
+		C.free(unsafe.Pointer(cservice))
+		C.free(unsafe.Pointer(cuser))
+	}()
+
+	var cpasswd, cerror *C.char
+	C.getpasswd(cservice, cuser, &cpasswd, &cerror)
+	defer C.free(unsafe.Pointer(cpasswd))
+	defer C.free(unsafe.Pointer(cerror))
+	if cerror != nil {
+		return nil, errors.New(C.GoString(cerror))
+	}
+	return []byte(C.GoString(cpasswd)), nil
 }
 
 func (k *keychain) Delete(service, username string) error {

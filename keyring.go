@@ -7,15 +7,17 @@ import (
 	"runtime"
 )
 
+var ErrUnsupportedOS = errors.New("not supported")
+
 var keyring = map[string]Keyring{}
 
 // Keyring defines the Keyring client available on the platform.
 type Keyring interface {
-	// Get gets the password for the service and username if exists.
-	Get(service, username string) (string, error)
-
 	// Set sets a password for the service and username.
-	Set(service, username, password string) error
+	Set(service, username string, password []byte) error
+
+	// Get returns the password for the service and username if exists.
+	Get(service, username string) ([]byte, error)
 
 	// Delete deletes a password belongs to the service and username.
 	Delete(service, username string) error
@@ -28,7 +30,6 @@ func New() (Keyring, error) {
 		return keyring["factotum"], nil
 	case "darwin":
 		return keyring["darwin"], nil
-	default:
-		return nil, errors.New("unsupported OS")
 	}
+	return nil, ErrUnsupportedOS
 }
